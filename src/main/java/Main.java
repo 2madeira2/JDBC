@@ -9,7 +9,7 @@ public class Main {
         final String second_request = "select w.org_sender from waybill w where w.waybill_num in (select wp.waybill from waybill_position wp where wp.amount > ?);";
         final String third_request = "select sum(wp.amount)as total_amount, sum(wp.price) as total_price from waybill_position wp where wp.waybill in( select w.waybill_num from waybill w where w.waybill_date between ? and ?);";
         final String fourth_request = "select avg(wp.price) from waybill_position wp where wp.waybill in( select w.waybill_num from waybill w where w.waybill_date between ? and ?);";
-        final String fifth_request = "select n.name, w.org_sender from waybill w join waybill_position wp on w.waybill_num=wp.waybill join  nomenclature n on wp.nomenclature=n.id where w.waybill_date between ? and ?;";
+        final String fifth_request = "SELECT organization.name AS organization, nomenclature.name AS product FROM organization LEFT JOIN waybill ON organization.name = waybill.org_sender AND waybill.waybill_date BETWEEN ? AND ? LEFT JOIN waybill_position ON waybill.waybill_num = waybill_position.waybill LEFT JOIN nomenclature ON waybill_position.nomenclature = nomenclature.id GROUP BY organization, nomenclature.id ORDER BY organization.name;";
 
         final Flyway flyway = Flyway.configure().dataSource("jdbc:postgresql://127.0.0.1:5432/test", "postgres", "whoami")
                 .locations("db")
@@ -35,6 +35,7 @@ public class Main {
             organizationDAO.save(new Organization("Billa",34214,42411));
             organizationDAO.save(new Organization("Mail",34217744,434222));
             organizationDAO.save(new Organization("Yandex",342175314,434224341));
+            organizationDAO.save(new Organization("Sukhoi",342175314,434224341));
 
 
             WaybillDAO waybillDAO = new WaybillDAO(connection);
@@ -58,6 +59,7 @@ public class Main {
             nomenclatureDAO.save(new Nomenclature(3, "Smart_Station", 3224));
 
 
+
             //Into WayBill_position.
 
             WaybillPositionDAO waybillPositionDAO = new WaybillPositionDAO(connection);
@@ -77,7 +79,7 @@ public class Main {
 
             System.out.println("Report 1: Top 10 suppliers of the number of delivered goods ");
             try (PreparedStatement stmt = connection.prepareStatement(first_request)) {
-                stmt.setInt(1, 5);
+                stmt.setInt(1, 10);
                 try (ResultSet rs = stmt.executeQuery())
                 {
                     while (rs.next()) {
@@ -121,8 +123,8 @@ public class Main {
                 stmt.setDate(2, java.sql.Date.valueOf("2011-03-01"));
                 try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
-                        System.out.print(rs.getString("name") + " ");
-                        System.out.println(rs.getString("org_sender"));
+                        System.out.print(rs.getString("organization") + " ");
+                        System.out.println(rs.getString("product"));
                     }
                 }
             }
@@ -132,3 +134,5 @@ public class Main {
         }
     }
 }
+
+
