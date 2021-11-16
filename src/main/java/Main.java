@@ -1,9 +1,16 @@
 import org.flywaydb.core.Flyway;
-
 import java.sql.*;
+import java.time.LocalDate;
 
 public class Main {
     public static void main(String[] args) {
+
+        final String first_request = "select w.org_sender from waybill w join waybill_position wp on w.waybill_num = wp.waybill order by wp.amount DESC LIMIT ?;";
+        final String second_request = "select w.org_sender from waybill w where w.waybill_num in (select wp.waybill from waybill_position wp where wp.amount > ?);";
+        final String third_request = "select sum(wp.amount)as total_amount, sum(wp.price) as total_price from waybill_position wp where wp.waybill in( select w.waybill_num from waybill w where w.waybill_date between ? and ?);";
+        final String fourth_request = "select avg(wp.price) from waybill_position wp where wp.waybill in( select w.waybill_num from waybill w where w.waybill_date between ? and ?);";
+        final String fifth_request = "select n.name, w.org_sender from waybill w join waybill_position wp on w.waybill_num=wp.waybill join  nomenclature n on wp.nomenclature=n.id where w.waybill_date between ? and ?;";
+
         final Flyway flyway = Flyway.configure().dataSource("jdbc:postgresql://127.0.0.1:5432/test", "postgres", "whoami")
                 .locations("db")
                 .load();
@@ -11,104 +18,87 @@ public class Main {
         flyway.migrate();
 
 
+
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/test", "postgres", "whoami")) {
             System.out.println("Connection OK.");
 
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Magnit',34,432432451)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Patyorochka',344314,43244451)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Centre',34214314,43243224451)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Perekrestok',342143134,4324434232451)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Xiaomi',3314424242,4342224322451)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('adidas',34314,43422243245142)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('FixPrice',7414,434243245143)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Nike',2177314,43422243245421)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Puma',3443217744314,43422254241)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Billa',34214,4241)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Mail',3421774314,434222)");
-                stmt.executeUpdate("INSERT INTO organization(name,\"INN\",checking_account) VALUES('Yandex',342177225314,434224341)");
-            }
+            OrganizationDAO organizationDAO = new OrganizationDAO(connection);
+            organizationDAO.save(new Organization("Magnit", 34, 432432451));
+            organizationDAO.save(new Organization("Patyorochka",344314,43244451));
+            organizationDAO.save(new Organization("Centre",34214314,432432241));
+            organizationDAO.save(new Organization("Perekrestok",342143134,43244342));
+            organizationDAO.save(new Organization("Xiaomi",33144242,42243251));
+            organizationDAO.save(new Organization("adidas",34314,434245142));
+            organizationDAO.save(new Organization("FixPrice",7414,434245143));
+            organizationDAO.save(new Organization("Nike",2177314,434242421));
+            organizationDAO.save(new Organization("Puma",344344314,422254241));
+            organizationDAO.save(new Organization("Billa",34214,42411));
+            organizationDAO.save(new Organization("Mail",34217744,434222));
+            organizationDAO.save(new Organization("Yandex",342175314,434224341));
 
 
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  1,'2010-04-01','Magnit')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  2,'2010-05-01','Patyorochka')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  3,'2010-06-01','Perekrestok')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  4,'2010-07-01','Centre')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  5,'2010-08-01','Xiaomi')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  6,'2010-09-01','adidas')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  7,'2010-10-01','FixPrice')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  8,'2010-11-01','Nike')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  9,'2010-12-01','Puma')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  10,'2011-01-01','Billa')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  11,'2011-02-01','Mail')");
-                stmt.executeUpdate("INSERT INTO waybill(waybill_num,waybill_date,org_sender) VALUES(  12,'2011-03-01','Yandex')");
+            WaybillDAO waybillDAO = new WaybillDAO(connection);
+            waybillDAO.save(new Waybill(1, LocalDate.of(2010, 4, 1),"Magnit"));
+            waybillDAO.save(new Waybill(2, LocalDate.of(2010, 5, 1),"Patyorochka"));
+            waybillDAO.save(new Waybill(3, LocalDate.of(2010, 6, 1),"Perekrestok"));
+            waybillDAO.save(new Waybill(4, LocalDate.of(2010, 7, 1),"Centre"));
+            waybillDAO.save(new Waybill(5, LocalDate.of(2010, 8, 1),"Xiaomi"));
+            waybillDAO.save(new Waybill(6, LocalDate.of(2010, 9, 1),"adidas"));
+            waybillDAO.save(new Waybill(7, LocalDate.of(2010, 10, 1),"FixPrice"));
+            waybillDAO.save(new Waybill(8, LocalDate.of(2010, 11, 1),"Nike"));
+            waybillDAO.save(new Waybill(9, LocalDate.of(2010, 12, 1),"Puma"));
+            waybillDAO.save(new Waybill(10, LocalDate.of(2011, 1, 1),"Billa"));
+            waybillDAO.save(new Waybill(11, LocalDate.of(2011, 2, 1),"Mail"));
+            waybillDAO.save(new Waybill(12, LocalDate.of(2011, 3, 1),"Yandex"));
 
-
-            }
             //Insert into Nomenclature.
-            try (Statement stmt = connection.createStatement()) {
-                stmt.executeUpdate("INSERT INTO nomenclature(id,name,internal_code) VALUES(1,'Milk',2242) ");
-                stmt.executeUpdate("INSERT INTO nomenclature(id,name,internal_code) VALUES(2,'Sneaker',24432) ");
-                stmt.executeUpdate("INSERT INTO nomenclature(id,name,internal_code) VALUES(3,'Smart_Station',3224) ");
-            }
+            NomenclatureDAO nomenclatureDAO = new NomenclatureDAO(connection);
+            nomenclatureDAO.save(new Nomenclature(1, "Milk", 2242));
+            nomenclatureDAO.save(new Nomenclature(2, "Sneaker", 24432));
+            nomenclatureDAO.save(new Nomenclature(3, "Smart_Station", 3224));
+
+
             //Into WayBill_position.
-            try (Statement stmt = connection.createStatement()) {
 
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (1,540000,1,40000,1)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (2,550000,1,41000,2)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (3,530000,1,44000,3)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (4,540000,1,42000,4)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (5,520000,1,44000,7)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (6,560000,1,40000,10)");
-
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (7,1000000,2,5200,6)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (8,1200000,2,5100,8)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (9,1400000,2,5400,9)");
-
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (10,500000,3,11000,5)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (11,510000,3,13200,12)");
-                stmt.executeUpdate("INSERT INTO waybill_position(position ,price,nomenclature,amount,waybill) VALUES (12,490000,3,13100,11)");
-            }
+            WaybillPositionDAO waybillPositionDAO = new WaybillPositionDAO(connection);
+            waybillPositionDAO.save(new WaybillPosition(1,540000,1,40000,1));
+            waybillPositionDAO.save(new WaybillPosition(2,550000,1,41000,2));
+            waybillPositionDAO.save(new WaybillPosition(3,530000,1,44000,3));
+            waybillPositionDAO.save(new WaybillPosition(4,540000,1,42000,4));
+            waybillPositionDAO.save(new WaybillPosition(5,520000,1,44000,7));
+            waybillPositionDAO.save(new WaybillPosition(6,560000,1,40000,10));
+            waybillPositionDAO.save(new WaybillPosition(7,1000000,2,5200,6));
+            waybillPositionDAO.save(new WaybillPosition(8,1200000,2,5100,8));
+            waybillPositionDAO.save(new WaybillPosition(9,1400000,2,5400,9));
+            waybillPositionDAO.save(new WaybillPosition(10,500000,3,11000,5));
+            waybillPositionDAO.save(new WaybillPosition(11,510000,3,13200,12));
+            waybillPositionDAO.save(new WaybillPosition(12,490000,3,13100,11));
 
 
             System.out.println("Report 1: Top 10 suppliers of the number of delivered goods ");
-            try (Statement stmt = connection.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery("select w.org_sender\n" +
-                        "from waybill w \n" +
-                        "where w.waybill_num in\n" +
-                        "(select  wp.waybill\n" +
-                        "from  waybill_position wp \n" +
-                        "order by wp.amount DESC\n" +
-                        "limit 10);")) {
+            try (PreparedStatement stmt = connection.prepareStatement(first_request)) {
+                stmt.setInt(1, 5);
+                try (ResultSet rs = stmt.executeQuery())
+                {
                     while (rs.next()) {
                         System.out.println(rs.getString("org_sender"));
                     }
                 }
             }
             System.out.println("Report 2: suppliers of the number of delivered goods greater than 42000");
-            try (Statement stmt = connection.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery("select w.org_sender \n" +
-                        "from waybill w  \n" +
-                        "where w.waybill_num in (select wp.waybill\n" +
-                        "from  waybill_position wp \n" +
-                        "where wp.amount >42000\n" +
-                        ");")) {
+            try (PreparedStatement stmt = connection.prepareStatement(second_request)) {
+                stmt.setInt(1,42000);
+                try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         System.out.println(rs.getString("org_sender"));
                     }
                 }
             }
             System.out.println("Report 3: quantity and amount of goods received in the specified period ");
-            try (Statement stmt = connection.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery("select sum(wp.amount)as total_amount,\n" +
-                        "\t\tsum(wp.price) as total_price\n" +
-                        "from waybill_position wp\n" +
-                        "where wp.waybill in(\n" +
-                        "select w.waybill_num\n" +
-                        "from waybill w\n" +
-                        "where w.waybill_date between '2010-04-01'\n" +
-                        "and '2010-07-01')\n")) {
+            try (PreparedStatement stmt = connection.prepareStatement(third_request)) {
+                stmt.setDate(1, java.sql.Date.valueOf("2010-04-01"));
+                stmt.setDate(2, java.sql.Date.valueOf("2010-07-01"));
+                try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         System.out.println(rs.getString("total_price"));
                         System.out.println(rs.getString("total_amount"));
@@ -116,35 +106,26 @@ public class Main {
                 }
             }
             System.out.println("Report 4: average price of goods for the received period ");
-            try (Statement stmt = connection.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery("select avg(wp.price) \n" +
-                        "from waybill_position wp\n" +
-                        "where wp.waybill in(\n" +
-                        "select w.waybill_num\n" +
-                        "from waybill w\n" +
-                        "where w.waybill_date between '2010-04-01'\n" +
-                        "and '2010-07-01')")) {
+            try (PreparedStatement stmt = connection.prepareStatement(fourth_request)) {
+                stmt.setDate(1, java.sql.Date.valueOf("2010-04-01"));
+                stmt.setDate(2, java.sql.Date.valueOf("2010-07-01"));
+                try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         System.out.println(rs.getString("avg"));
                     }
                 }
             }
             System.out.println("Report 5: list of goods supplied by organizations for the period ");
-            try (Statement stmt = connection.createStatement()) {
-                try (ResultSet rs = stmt.executeQuery("select n.name, w.org_sender\n" +
-                        "from waybill w \n" +
-                        "join waybill_position wp on w.waybill_num=wp.waybill\n" +
-                        "join  nomenclature n on wp.nomenclature=n.id\n" +
-                        "where w.waybill_date between '2010-04-01'\n" +
-                        "and '2011-03-01' ;")) {
+            try (PreparedStatement stmt = connection.prepareStatement(fifth_request)) {
+                stmt.setDate(1, java.sql.Date.valueOf("2010-04-01"));
+                stmt.setDate(2, java.sql.Date.valueOf("2011-03-01"));
+                try (ResultSet rs = stmt.executeQuery()) {
                     while (rs.next()) {
                         System.out.print(rs.getString("name") + " ");
                         System.out.println(rs.getString("org_sender"));
                     }
                 }
             }
-
-
         } catch (SQLException throwables) {
             System.out.println("Connection failure.");
             throwables.printStackTrace();

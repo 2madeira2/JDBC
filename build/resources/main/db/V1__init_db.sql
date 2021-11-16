@@ -5,14 +5,14 @@ CREATE TABLE nomenclature
     internal_code bigint,
     CONSTRAINT id_pkey PRIMARY KEY (id)
 );
-CREATE TABLE public.organization
+CREATE TABLE organization
 (
     name character varying(30) NOT NULL,
     "INN" bigint,
     checking_account bigint,
     CONSTRAINT "orgName_pkey" PRIMARY KEY (name)
 );
-CREATE TABLE public.waybill
+CREATE TABLE waybill
 (
     waybill_num serial NOT NULL,
     waybill_date date,
@@ -24,7 +24,7 @@ CREATE TABLE public.waybill
         ON DELETE NO ACTION
         NOT VALID
 );
-CREATE TABLE public.waybill_position
+CREATE TABLE waybill_position
 (
     position serial NOT NULL,
     price bigint,
